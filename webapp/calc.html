@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Себестоимость печати</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--tg-theme-bg-color, #f0f0f5);
+      color: var(--tg-theme-text-color, #1a1a1a);
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--tg-theme-secondary-bg-color, #ffffff);
+      border-radius: 20px;
+      padding: 24px 20px;
+      margin-bottom: 12px;
+    }
+
+    h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #888; }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    select, input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      font-size: 15px;
+      background: var(--tg-theme-bg-color, #f0f0f5);
+      color: var(--tg-theme-text-color, #1a1a1a);
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--tg-theme-button-color, #2481cc);
+    }
+
+    .select-wrapper { position: relative; }
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #888;
+    }
+
+    .result-block {
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .result-block .result-label {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-bottom: 4px;
+    }
+
+    .result-block .result-amount {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .result-block .result-detail {
+      font-size: 12px;
+      opacity: 0.75;
+      margin-top: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border: none;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:active { opacity: 0.8; }
+
+    .error {
+      color: #ff3b30;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+      padding: 10px 14px;
+      background: rgba(255,59,48,0.1);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Себестоимость</h2>
+    <p class="subtitle">Расчёт стоимости печати</p>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>Пластик</label>
+      <div class="select-wrapper">
+        <select id="filament" onchange="calculate()">
+          <option value="">— выберите пластик —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Расход филамента (граммы)</label>
+      <input type="number" id="grams" min="1" step="1" placeholder="100" oninput="calculate()"/>
+    </div>
+
+    <div class="error" id="error">Пожалуйста, заполните все поля</div>
+  </div>
+
+  <div class="result-block">
+    <div class="result-label">Себестоимость материала</div>
+    <div class="result-amount" id="result">0 ₽</div>
+    <div class="result-detail" id="result-detail">Выберите пластик и введите граммы</div>
+  </div>
+
+  <button onclick="submit()">✅ Готово</button>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // читаем пластики из URL
+    let filaments = [];
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('filaments');
+      if (raw) filaments = JSON.parse(decodeURIComponent(raw));
+    } catch(e) {}
+
+    // заполняем список
+    const select = document.getElementById('filament');
+    filaments.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.price;
+      opt.textContent = `${f.name} — ${f.price.toLocaleString('ru-RU')} ₽/кг`;
+      opt.dataset.name = f.name;
+      select.appendChild(opt);
+    });
+
+    function calculate() {
+      const pricePerKg = parseFloat(document.getElementById('filament').value);
+      const grams = parseFloat(document.getElementById('grams').value);
+
+      if (isNaN(pricePerKg) || isNaN(grams) || grams <= 0) {
+        document.getElementById('result').textContent = '0 ₽';
+        document.getElementById('result-detail').textContent = 'Выберите пластик и введите граммы';
+        return;
+      }
+
+      const cost = (pricePerKg / 1000) * grams;
+      document.getElementById('result').textContent = cost.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₽';
+      document.getElementById('result-detail').textContent = `${grams}г × ${(pricePerKg/1000).toFixed(2)} ₽/г`;
+    }
+
+    function submit() {
+      const sel = document.getElementById('filament');
+      const pricePerKg = parseFloat(sel.value);
+      const grams = parseFloat(document.getElementById('grams').value);
+      const err = document.getElementById('error');
+
+      if (isNaN(pricePerKg) || isNaN(grams) || grams <= 0) {
+        err.style.display = 'block';
+        return;
+      }
+      err.style.display = 'none';
+
+      const name = sel.options[sel.selectedIndex].dataset.name;
+      const cost = (pricePerKg / 1000) * grams;
+
+      tg.sendData(JSON.stringify({
+        type: 'calc',
+        filament: name,
+        grams: grams,
+        cost: cost.toFixed(2)
+      }));
+    }
+  </script>
+</body>
+</html>
