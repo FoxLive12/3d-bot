@@ -84,6 +84,8 @@
       const price = parseFloat(document.getElementById('price').value);
       const err = document.getElementById('error');
 
+      alert(`category: ${category}, name: ${name}, qty: ${quantity}, price: ${price}`);
+
       if (!category || !name || isNaN(quantity) || isNaN(price) || quantity <= 0 || price <= 0) {
         err.style.display = 'block';
         return;
