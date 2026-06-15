@@ -7,65 +7,210 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--tg-theme-bg-color, #fff);
-      color: var(--tg-theme-text-color, #000);
-      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--tg-theme-bg-color, #f0f0f5);
+      color: var(--tg-theme-text-color, #1a1a1a);
+      min-height: 100vh;
+      padding: 16px;
     }
-    h2 { font-size: 20px; margin-bottom: 20px; }
-    label { font-size: 13px; color: #888; display: block; margin-bottom: 4px; margin-top: 14px; }
+
+    .card {
+      background: var(--tg-theme-secondary-bg-color, #ffffff);
+      border-radius: 20px;
+      padding: 24px 20px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 0;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
     select, input {
       width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      font-size: 16px;
-      background: var(--tg-theme-secondary-bg-color, #f5f5f5);
-      color: var(--tg-theme-text-color, #000);
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      font-size: 15px;
+      background: var(--tg-theme-bg-color, #f0f0f5);
+      color: var(--tg-theme-text-color, #1a1a1a);
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
     }
-    #name-group { display: none; }
+
+    select:focus, input:focus {
+      border-color: var(--tg-theme-button-color, #2481cc);
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #888;
+      font-size: 16px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .hidden { display: none; }
+
+    .total-block {
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .total-block .label { font-size: 13px; opacity: 0.85; color: inherit; text-transform: none; letter-spacing: 0; margin: 0; }
+    .total-block .amount { font-size: 22px; font-weight: 700; }
+
     button {
-      margin-top: 28px;
       width: 100%;
-      padding: 14px;
+      padding: 16px;
       background: var(--tg-theme-button-color, #2481cc);
       color: var(--tg-theme-button-text-color, #fff);
       border: none;
-      border-radius: 12px;
+      border-radius: 16px;
       font-size: 17px;
       font-weight: 600;
       cursor: pointer;
+      transition: opacity 0.15s;
     }
-    .error { color: red; font-size: 13px; margin-top: 8px; display: none; }
+
+    button:active { opacity: 0.8; }
+
+    .error {
+      color: #ff3b30;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+      padding: 10px 14px;
+      background: rgba(255,59,48,0.1);
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
-  <h2>Добавить расход</h2>
 
-  <label>Категория</label>
-  <select id="category" onchange="onCategoryChange()">
-    <option value="">— выберите —</option>
-    <option value="printer">🖨️ Принтер</option>
-    <option value="filament">🧵 Пластик (филамент)</option>
-    <option value="spare">🔧 Запчасти / расходники</option>
-    <option value="other">📦 Другое</option>
-  </select>
-
-  <div id="name-group">
-    <label>Название / описание</label>
-    <input type="text" id="name" placeholder="например: Bambu Lab A1, PLA белый 1кг..." />
+  <div class="card">
+    <h2>Добавить расход</h2>
+    <p class="subtitle">Запись новой покупки</p>
   </div>
 
-  <label>Количество</label>
-  <input type="number" id="quantity" min="0.01" step="0.01" placeholder="1" />
+  <div class="card">
+    <div class="field">
+      <label>Категория</label>
+      <div class="select-wrapper">
+        <select id="category" onchange="onCategoryChange()">
+          <option value="">— выберите —</option>
+          <option value="printer">🖨️ Принтер</option>
+          <option value="filament">🧵 Пластик (филамент)</option>
+          <option value="spare">🔧 Запчасти / расходники</option>
+          <option value="other">📦 Другое</option>
+        </select>
+      </div>
+    </div>
 
-  <label>Цена за единицу (руб.)</label>
-  <input type="number" id="price" min="0.01" step="0.01" placeholder="1500" />
+    <!-- Принтеры -->
+    <div class="field hidden" id="printer-group">
+      <label>Модель принтера</label>
+      <div class="select-wrapper">
+        <select id="printer-model" onchange="onModelChange('printer-model', 'printer-custom')">
+          <option value="">— выберите модель —</option>
+          <option value="Bambu Lab H2D">Bambu Lab H2D</option>
+          <option value="Bambu Lab X1C">Bambu Lab X1C</option>
+          <option value="Bambu Lab P2S">Bambu Lab P2S</option>
+          <option value="Creality K2 Plus">Creality K2 Plus</option>
+          <option value="Flashforge Adventurer 5M">Flashforge Adventurer 5M</option>
+          <option value="custom">✏️ Другая модель...</option>
+        </select>
+      </div>
+      <input type="text" id="printer-custom" class="hidden" placeholder="Введите название принтера" style="margin-top:10px"/>
+    </div>
 
-  <div class="error" id="error">Пожалуйста, заполните все поля</div>
+    <!-- Пластик -->
+    <div class="field hidden" id="filament-group">
+      <label>Тип пластика</label>
+      <div class="select-wrapper">
+        <select id="filament-model" onchange="onModelChange('filament-model', 'filament-custom')">
+          <option value="">— выберите тип —</option>
+          <option value="PLA 1кг">PLA 1кг</option>
+          <option value="PETG 1кг">PETG 1кг</option>
+          <option value="ABS 1кг">ABS 1кг</option>
+          <option value="TPU 1кг">TPU 1кг</option>
+          <option value="Nylon 1кг">Nylon 1кг</option>
+          <option value="custom">✏️ Другой тип...</option>
+        </select>
+      </div>
+      <input type="text" id="filament-custom" class="hidden" placeholder="Введите тип пластика" style="margin-top:10px"/>
+    </div>
 
-  <button onclick="submit()">💾 Сохранить</button>
+    <!-- Другое -->
+    <div class="field hidden" id="other-group">
+      <label>Название / описание</label>
+      <input type="text" id="other-name" placeholder="Что купили?"/>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Количество</label>
+        <input type="number" id="quantity" min="0.01" step="0.01" placeholder="1" oninput="updateTotal()"/>
+      </div>
+      <div class="field">
+        <label>Цена за ед. (₽)</label>
+        <input type="number" id="price" min="0.01" step="0.01" placeholder="0" oninput="updateTotal()"/>
+      </div>
+    </div>
+
+    <div class="error" id="error">Пожалуйста, заполните все поля</div>
+  </div>
+
+  <div class="total-block" id="total-block">
+    <span class="label">Итого</span>
+    <span class="amount" id="total-amount">0 ₽</span>
+  </div>
+
+  <button onclick="submit()">💾 Сохранить расход</button>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -74,12 +219,39 @@
 
     function onCategoryChange() {
       const cat = document.getElementById('category').value;
-      document.getElementById('name-group').style.display = cat ? 'block' : 'none';
+      document.getElementById('printer-group').classList.toggle('hidden', cat !== 'printer');
+      document.getElementById('filament-group').classList.toggle('hidden', cat !== 'filament');
+      document.getElementById('other-group').classList.toggle('hidden', !['spare', 'other'].includes(cat));
+    }
+
+    function onModelChange(selectId, customId) {
+      const val = document.getElementById(selectId).value;
+      document.getElementById(customId).classList.toggle('hidden', val !== 'custom');
+    }
+
+    function updateTotal() {
+      const qty = parseFloat(document.getElementById('quantity').value) || 0;
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const total = qty * price;
+      document.getElementById('total-amount').textContent = total.toLocaleString('ru-RU') + ' ₽';
+    }
+
+    function getName() {
+      const cat = document.getElementById('category').value;
+      if (cat === 'printer') {
+        const sel = document.getElementById('printer-model').value;
+        return sel === 'custom' ? document.getElementById('printer-custom').value.trim() : sel;
+      }
+      if (cat === 'filament') {
+        const sel = document.getElementById('filament-model').value;
+        return sel === 'custom' ? document.getElementById('filament-custom').value.trim() : sel;
+      }
+      return document.getElementById('other-name').value.trim();
     }
 
     function submit() {
       const category = document.getElementById('category').value;
-      const name = document.getElementById('name').value.trim();
+      const name = getName();
       const quantity = parseFloat(document.getElementById('quantity').value);
       const price = parseFloat(document.getElementById('price').value);
       const err = document.getElementById('error');
